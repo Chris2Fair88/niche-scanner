@@ -1,0 +1,25 @@
+# Ingested API data + local SQLite db -- not source, and may contain
+# API-derived content not meant for version control. Directory structure
+# is preserved via data/.gitkeep.
+data/*
+!data/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Local secrets, should never be committed (config.yaml only stores env var
+# *names*, never actual keys, but this guards against an accidental .env)
+.env
+.env.*

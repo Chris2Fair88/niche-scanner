@@ -1,0 +1,65 @@
+# niche-scanner config
+# All secrets are read from environment variables named below.
+# Nothing here should ever contain an actual key.
+
+youtube:
+  api_key_env: YOUTUBE_API_KEY
+  quota_abort_threshold: 8000     # projected general-pool units above this requires --confirm
+  search_list_daily_cap: 100      # search.list has its own separate 100-calls/day cap (1 unit/call),
+                                  # independent of the general 10k-unit pool -- this is the primary,
+                                  # more binding gate; quota_abort_threshold is the secondary one
+  search_results_per_call: 50     # max results per search.list call
+  top_channels_sampled: 30        # channels taken forward to playlistItems/videos.list
+  videos_per_channel: 15          # recent uploads pulled per sampled channel
+  breakout_view_threshold: 100000 # "breakout video" view count bar
+  breakout_window_months: 12      # "new channel" window for breakout_rate
+  velocity_window_days: 90        # recency window for the velocity metric
+
+trends:
+  timeframe: "today 5-y"          # pytrends timeframe string
+  slope_window_months: 24         # trailing window used for trend_slope
+  sleep_min_seconds: 10
+  sleep_max_seconds: 20
+  max_retries: 6
+  max_backoff_seconds: 300
+
+reddit:
+  client_id_env: REDDIT_CLIENT_ID
+  client_secret_env: REDDIT_CLIENT_SECRET
+  user_agent: "niche-scanner/0.1 (script app; contact via GitHub profile)"
+  new_posts_sample: 100           # posts pulled from r/<sub>/new to estimate posts/day
+
+anthropic:
+  api_key_env: ANTHROPIC_API_KEY
+  # NOTE: the original brief specified claude-sonnet-4-6. That model string is
+  # superseded. Anthropic's current (July 2026) model lineup is Claude Fable 5,
+  # Claude Opus 4.8, Claude Sonnet 5, and Claude Haiku 4.5 -- model strings
+  # 'claude-fable-5', 'claude-opus-4-8', 'claude-sonnet-5', 'claude-haiku-4-5-20251001'.
+  # Sonnet 5 is the right balance of cost/quality for a single synthesis call
+  # over an already-small scored table, so that's the default below. Check
+  # https://docs.claude.com/en/docs/about-claude/models/overview before a run
+  # if it's been a while -- Anthropic ships updates frequently.
+  model: claude-sonnet-5
+  max_tokens: 4096
+
+# Composite score weights. Must sum to 1.0 across these six components.
+# policy_risk is NOT a weighted component -- it's a 0.5-1.0 multiplier applied
+# to the weighted sum, per the brief.
+weights:
+  breakout_rate: 0.30
+  trend_slope: 0.20
+  velocity: 0.15
+  sponsor_density: 0.15
+  rpm_range: 0.10
+  upload_burden: 0.10   # scored inversely: lower burden = better semi-passive fit
+
+policy_risk_multiplier:
+  min: 0.5
+  max: 1.0
+
+# Niches that should score in the bottom third. If any land in the top half
+# of the composite ranking, score.py marks the run 'suspect'.
+negative_controls:
+  - generic-motivation-compilations
+  - luxury-lifestyle-flexing
+  - clickbait-net-worth-shorts

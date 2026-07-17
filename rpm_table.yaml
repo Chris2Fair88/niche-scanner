@@ -1,0 +1,17 @@
+# Rough, widely-cited industry ballparks for YouTube ad RPM (USD per 1000
+# MONETIZED views, not per 1000 total views -- actual RPM depends heavily on
+# audience geography, season, and format). These are placeholders to get the
+# scorer running end-to-end; replace with real numbers from your own AdSense
+# data or a media-buying contact before trusting rpm_range in a real decision.
+# [low, high]
+education: [4, 12]
+music_howto: [2, 6]
+tech_education: [6, 18]
+finance: [10, 30]
+entertainment: [1, 4]
+philosophy_selfhelp: [2, 6]
+lifestyle: [2, 5]
+fitness: [3, 8]
+
+# Fallback used if a niche's rpm_category isn't found above.
+_default: [1, 4]

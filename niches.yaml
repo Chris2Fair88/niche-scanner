@@ -1,0 +1,191 @@
+# niche-scanner seed list
+# rpm_category keys into rpm_table.yaml
+# my_expertise: high | medium | none -- used only in report.py synthesis (fit analysis),
+#   never in score.py -- expertise must not influence the composite score itself.
+
+# --- Expertise areas -------------------------------------------------------
+- slug: music-theory-shorts
+  label: "Music theory explainers (Shorts-first)"
+  search_terms: ["music theory explained", "why this chord works"]
+  subreddits: ["musictheory"]
+  trends_terms: ["music theory"]
+  rpm_category: education
+  my_expertise: high
+
+- slug: guitar-lessons-beginner
+  label: "Beginner guitar lessons"
+  search_terms: ["beginner guitar lesson", "learn guitar chords"]
+  subreddits: ["Guitar", "guitarlessons"]
+  trends_terms: ["guitar lessons"]
+  rpm_category: music_howto
+  my_expertise: high
+
+- slug: ukulele-covers-tutorials
+  label: "Ukulele covers and tutorials"
+  search_terms: ["ukulele tutorial", "ukulele cover easy"]
+  subreddits: ["ukulele"]
+  trends_terms: ["ukulele tutorial"]
+  rpm_category: music_howto
+  my_expertise: high
+
+- slug: home-recording-production
+  label: "Home recording / bedroom producer tips"
+  search_terms: ["home recording tips", "bedroom producer mixing"]
+  subreddits: ["WeAreTheMusicMakers", "audioengineering"]
+  trends_terms: ["home recording studio"]
+  rpm_category: music_howto
+  my_expertise: high
+
+- slug: dev-tutorials-webdev
+  label: "Web development tutorials"
+  search_terms: ["web development tutorial", "react tutorial 2026"]
+  subreddits: ["webdev", "learnprogramming"]
+  trends_terms: ["web development tutorial"]
+  rpm_category: tech_education
+  my_expertise: high
+
+- slug: ai-assisted-coding
+  label: "AI-assisted coding workflows (Claude Code, Copilot, agents)"
+  search_terms: ["AI coding assistant tutorial", "agentic coding workflow"]
+  subreddits: ["ClaudeAI", "ChatGPTCoding"]
+  trends_terms: ["AI coding assistant"]
+  rpm_category: tech_education
+  my_expertise: high
+
+# --- Commonly hyped niches (calibration set) --------------------------------
+- slug: personal-finance-tips
+  label: "Personal finance / budgeting tips"
+  search_terms: ["personal finance tips", "budgeting for beginners"]
+  subreddits: ["personalfinance"]
+  trends_terms: ["personal finance tips"]
+  rpm_category: finance
+  my_expertise: none
+
+- slug: notion-productivity-templates
+  label: "Notion productivity templates"
+  search_terms: ["notion productivity setup", "notion template tour"]
+  subreddits: ["Notion"]
+  trends_terms: ["notion template"]
+  rpm_category: tech_education
+  my_expertise: medium
+
+- slug: ai-tool-reviews
+  label: "AI tool reviews / 'best AI tools' roundups"
+  search_terms: ["best AI tools", "new AI tool review"]
+  subreddits: ["artificial", "ArtificialInteligence"]
+  trends_terms: ["best AI tools"]
+  rpm_category: tech_education
+  my_expertise: medium
+
+- slug: faceless-automation-channels
+  label: "Faceless YouTube automation channels (meta-niche)"
+  search_terms: ["faceless youtube channel ideas", "youtube automation channel"]
+  subreddits: ["NewTubers"]
+  trends_terms: ["youtube automation"]
+  rpm_category: entertainment
+  my_expertise: none
+
+- slug: dropshipping-ecom
+  label: "Dropshipping / ecommerce reviews"
+  search_terms: ["dropshipping tutorial", "ecommerce store review"]
+  subreddits: ["dropship", "ecommerce"]
+  trends_terms: ["dropshipping"]
+  rpm_category: finance
+  my_expertise: none
+
+- slug: stoic-philosophy-shorts
+  label: "Stoicism / philosophy shorts"
+  search_terms: ["stoicism explained", "marcus aurelius quotes"]
+  subreddits: ["Stoicism"]
+  trends_terms: ["stoicism"]
+  rpm_category: philosophy_selfhelp
+  my_expertise: none
+
+- slug: dark-psychology-facts
+  label: "'Dark psychology' facts shorts"
+  search_terms: ["dark psychology facts", "manipulation tactics explained"]
+  subreddits: ["psychology"]
+  trends_terms: ["dark psychology"]
+  rpm_category: philosophy_selfhelp
+  my_expertise: none
+
+- slug: reddit-story-narration
+  label: "Reddit story narration channels"
+  search_terms: ["reddit stories narrated", "AITA reddit update"]
+  subreddits: ["AskReddit"]
+  trends_terms: ["reddit stories"]
+  rpm_category: entertainment
+  my_expertise: none
+
+- slug: minimalist-lifestyle
+  label: "Minimalist lifestyle / decluttering"
+  search_terms: ["minimalist lifestyle tips", "decluttering method"]
+  subreddits: ["minimalism"]
+  trends_terms: ["minimalist lifestyle"]
+  rpm_category: lifestyle
+  my_expertise: none
+
+- slug: crypto-trading-signals
+  label: "Crypto trading signals / education"
+  search_terms: ["crypto trading for beginners", "altcoin analysis today"]
+  subreddits: ["CryptoCurrency"]
+  trends_terms: ["crypto trading"]
+  rpm_category: finance
+  my_expertise: none
+
+- slug: ai-agent-news
+  label: "AI news aggregation ('AI news today')"
+  search_terms: ["AI news today", "latest AI model release"]
+  subreddits: ["artificial"]
+  trends_terms: ["AI news"]
+  rpm_category: tech_education
+  my_expertise: medium
+
+- slug: book-summary-channels
+  label: "Book summary channels ('in 10 minutes')"
+  search_terms: ["book summary in 10 minutes", "animated book summary"]
+  subreddits: ["books"]
+  trends_terms: ["book summary"]
+  rpm_category: education
+  my_expertise: none
+
+- slug: home-workout-no-equipment
+  label: "Home workout / no-equipment fitness"
+  search_terms: ["home workout no equipment", "bodyweight workout beginner"]
+  subreddits: ["bodyweightfitness"]
+  trends_terms: ["home workout"]
+  rpm_category: fitness
+  my_expertise: none
+
+- slug: language-learning-shorts
+  label: "Language learning shorts (e.g. 'Spanish in 60 seconds')"
+  search_terms: ["learn spanish in 60 seconds", "language learning shorts"]
+  subreddits: ["languagelearning"]
+  trends_terms: ["language learning app"]
+  rpm_category: education
+  my_expertise: none
+
+# --- Negative controls (expected to score low; see config.yaml) -----------
+- slug: generic-motivation-compilations
+  label: "Generic motivation speech compilations"
+  search_terms: ["motivational speech compilation", "best motivation video 2026"]
+  subreddits: []
+  trends_terms: ["motivational speech"]
+  rpm_category: entertainment
+  my_expertise: none
+
+- slug: luxury-lifestyle-flexing
+  label: "Luxury lifestyle 'flexing' compilation channels"
+  search_terms: ["luxury lifestyle compilation", "billionaire lifestyle video"]
+  subreddits: []
+  trends_terms: ["luxury lifestyle"]
+  rpm_category: entertainment
+  my_expertise: none
+
+- slug: clickbait-net-worth-shorts
+  label: "'How rich is X' net worth clickbait shorts"
+  search_terms: ["how rich is celebrity", "net worth revealed"]
+  subreddits: []
+  trends_terms: ["celebrity net worth"]
+  rpm_category: entertainment
+  my_expertise: none
