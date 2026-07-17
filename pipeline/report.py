@@ -31,6 +31,15 @@ RELEVANCE_FILTER_CAVEAT = (
     "skim, not blind trust."
 )
 
+# Below this fraction of config.yaml's youtube.top_channels_sampled, a niche's
+# ingested channel count is "meaningfully short" of the target rather than
+# just a normal shortfall -- e.g. reddit-story-narration surfaced only 12 of
+# a targeted 30 (40%) during the 2026-07-15 run, while every other
+# under-target niche that run still cleared 23/30 (77%). The gap between
+# those two groups is wide enough that 0.5 is a comfortable, non-fragile cut,
+# not a hairline one tuned to a single niche.
+THIN_SAMPLE_RATIO = 0.5
+
 
 def fmt_pct(x):
     return f"{x * 100:.1f}%" if x is not None else "n/a"
@@ -96,6 +105,54 @@ def fetch_run_meta(conn, run_date: str) -> dict | None:
     return dict(row) if row else None
 
 
+def fetch_channel_counts(conn) -> dict[str, int]:
+    """Sampled channel count per niche, from the same `channels` table
+    persist_raw() populates in score.py -- one row per channel actually
+    taken forward into scoring, so this reflects what ingestion found, not
+    what config.yaml's top_channels_sampled asked for."""
+    cur = conn.execute("SELECT niche_slug, COUNT(*) AS n FROM channels GROUP BY niche_slug")
+    return {row["niche_slug"]: row["n"] for row in cur.fetchall()}
+
+
+def build_thin_sample_caveat(channel_counts: dict[str, int], niche_labels: dict[str, str], cfg: dict) -> str | None:
+    """Fixed, non-LLM-generated caveat -- same pattern as
+    RELEVANCE_FILTER_CAVEAT -- flagging any niche whose sampled channel
+    count fell meaningfully short of top_channels_sampled. Not hardcoded to
+    any specific niche: computed from the actual ingested count vs. the
+    configured target, so it catches any future niche with the same
+    problem, not just the one that surfaced it. Returns None if no niche
+    qualifies this run.
+
+    A thin sample means every one of that niche's channels was taken
+    forward with zero filtering headroom (the normal process ranks more
+    candidates than it keeps and drops the weakest; here there weren't
+    enough candidates to drop any), so metrics like capture_index are far
+    more sensitive to any single channel's numbers than in a fully-sampled
+    niche.
+    """
+    target = cfg["youtube"]["top_channels_sampled"]
+    thin = sorted(
+        ((slug, count) for slug, count in channel_counts.items() if 0 < count < target * THIN_SAMPLE_RATIO),
+        key=lambda t: t[1],
+    )
+    if not thin:
+        return None
+
+    listing = "; ".join(
+        f"**{niche_labels.get(slug, slug)}** surfaced only {count} of the targeted {target} channels"
+        for slug, count in thin
+    )
+    subject = "This niche's" if len(thin) == 1 else "These niches'"
+    return (
+        f"**Thin sample warning:** {listing} during ingestion -- every sampled "
+        f"channel there was taken forward with zero filtering headroom, since "
+        f"there weren't enough candidates to rank down to the target of {target}. "
+        f"{subject} capture_index, velocity, and breakout_rate are correspondingly "
+        f"more sensitive to any single channel's numbers than a fully-sampled "
+        f"niche's, and should be read with that in mind."
+    )
+
+
 def call_sonnet(system_prompt: str, user_content: str, cfg: dict) -> str:
     try:
         import anthropic
@@ -128,6 +185,7 @@ def run(run_date: str) -> None:
         log.error("No scores found for run-date %s. Run score.py first.", run_date)
         sys.exit(1)
     meta = fetch_run_meta(conn, run_date)
+    channel_counts = fetch_channel_counts(conn)
     conn.close()
 
     league_table = build_league_table(rows)
@@ -152,11 +210,15 @@ def run(run_date: str) -> None:
         )
     header = "\n".join(header_lines)
 
+    niche_labels = {r["niche_slug"]: r["label"] for r in rows}
+    thin_sample_caveat = build_thin_sample_caveat(channel_counts, niche_labels, cfg)
+    caveats = RELEVANCE_FILTER_CAVEAT if thin_sample_caveat is None else f"{RELEVANCE_FILTER_CAVEAT}\n\n{thin_sample_caveat}"
+
     report_md = (
         f"{header}\n\n"
         f"## League Table\n\n{league_table}\n\n"
         f"{narrative.strip()}\n\n"
-        f"{RELEVANCE_FILTER_CAVEAT}\n"
+        f"{caveats}\n"
     )
 
     out_path = common.REPORTS_DIR / f"niche-report-{run_date}.md"

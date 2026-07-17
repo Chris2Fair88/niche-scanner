@@ -30,74 +30,83 @@
 
 ## Per-Niche Verdicts
 
-**Faceless YouTube automation channels (meta-niche)** — Top composite score, driven by a real breakout rate (3.3%), positive trend slope, and very low policy risk (0.02). The biggest risk is that this is a meta-niche about making faceless channels, so capture_index of 58% and razor-thin RPM ($1-$4) suggest a crowded, low-monetization space. Given the low policy risk, straightforward automated/faceless formats are still viable here, but the low RPM means volume, not per-video quality, will drive revenue.
+**Faceless YouTube automation channels** (rank 1): Top composite score driven by a real breakout rate (3.3%), high capture index, and near-zero policy risk. The biggest risk is that "faceless automation" is itself a meta-niche describing a production method, not a topic — it's crowded precisely because it's easy to enter. Low policy risk means templated/AI-narrated formats are still tolerated, but with no stated expertise here, success depends on picking a strong sub-niche underneath this umbrella.
 
-**Personal finance / budgeting tips** — Strong RPM ($10-$30) and high sponsor density (30.2%) make this commercially attractive, but 0% breakout rate and low capture_index-relative headroom (31.6%, the lowest in the set) suggest existing channels are hard to dislodge. Zero policy risk. Biggest risk is saturation from established authority channels; a realistic format is a personal/authentic budgeting-journey series rather than generic tips content, since credibility is likely the differentiator.
+**Personal finance / budgeting tips** (rank 2): Strong RPM ($10-$30) and high sponsor density (30.2%) make this commercially attractive, but 0% breakout rate and only moderate capture index suggest the space is saturated with established players and hard to break into fresh. No policy risk flag, so standard talking-head or screen-share formats remain viable. Biggest risk is competing against entrenched, monetization-savvy incumbents with no personal finance credentialing to differentiate.
 
-**Home workout / no-equipment fitness** — Highest velocity_median_views (23,725) and a breakout rate matching the top niche, with zero policy risk. Biggest risk is moderate-to-high capture (68%) meaning a few channels likely dominate view share. Real, on-camera human demonstration content is both the natural format and, given zero policy risk, not defensively necessary but still the most competitive approach.
+**Home workout / no-equipment fitness** (rank 3): Highest velocity_median_views (23,725) among top niches and a healthy 3.3% breakout rate signal real audience appetite. Capture index of 68% shows big channels absorb a lot of attention, and zero policy risk supports straightforward on-camera demonstration content. The risk is physical/on-camera demands with zero stated expertise, meaning credibility-building will be slow without genuine fitness background.
 
-**AI tool reviews / 'best AI tools' roundups** — Decent trend_slope (0.098, second-highest) and solid RPM ($6-$18), but 0% breakout rate and 58.6% capture_index signal a tough field to break into despite topical momentum. Policy risk is low (0.03). Biggest risk is rapid content obsolescence (tools change monthly); a hands-on testing/comparison format leveraging the stated medium expertise is the realistic play.
+**AI tool reviews / roundups**: Decent trend slope (0.098) and medium expertise align well, but 0% breakout rate and high capture index (58.6%) suggest incumbents dominate discovery. Low policy risk supports screen-recording/review formats. Risk is topic velocity — AI tools churn fast, so content has a short shelf life and demands frequent output to stay relevant.
 
-**Crypto trading signals / education** — High RPM ($10-$30) but 0% breakout rate, mediocre trend_slope (0.042), and by far the highest policy_risk among non-control niches (0.20). Biggest risk is platform/regulatory enforcement against financial advice content. Given the elevated policy risk, only clearly human, personal-opinion/education framing (not signals or promises) is realistic post-2026.
+**Crypto trading signals / education**: High RPM and sponsor density are offset by the highest policy_risk (0.20) in the upper ranks and zero breakout rate. The clear risk is regulatory/platform demonetization or removal risk. Given elevated policy risk and no expertise, only heavily-disclaimed, educational (not signal-selling) formats with real human presence would plausibly survive scrutiny.
 
-**Notion productivity templates** — Flat trend_slope (0.012) and 0% breakout rate suggest this niche has plateaued; high sponsor density (35.4%) shows monetization exists but for incumbents. Zero policy risk. Biggest risk is stagnant growth ceiling; template-demo/tutorial content tied to genuine personal workflow use is the only realistic differentiator.
+**Notion productivity templates**: Very high sponsor density (35.4%) but flat trend slope (0.012) and 0% breakout rate suggest a mature, plateauing niche. No policy risk. Medium expertise helps, but the low velocity_median_views (6,007) shows even successful entries don't reach large audiences — best suited as a template-selling funnel rather than a growth play.
 
-**Music theory explainers (Shorts-first)** — Modest trend_slope (0.060) and 0% breakout rate, with zero policy risk. Biggest risk is a small addressable audience ceiling reflected in mid-tier velocity (12,797). Shorts-first explainer format matches stated high expertise and is realistic given no policy pressure.
+**Music theory explainers (Shorts-first)**: High expertise match and zero policy risk are positives, but flat-ish trend slope (0.060) and 0% breakout rate limit upside. Real risk is format ceiling — Shorts-first explainer content is a crowded style. Human, on-camera instrument demonstration leveraging genuine expertise is the realistic path.
 
-**AI-assisted coding workflows** — Highest trend_slope in the entire dataset (0.125) and highest capture_index among non-control niches (75.3%), but low velocity (4,363) and 0% breakout rate. Biggest risk is a small, saturated audience of practitioners. Low policy risk (0.05) permits tutorial/demo formats; expertise-driven walkthroughs are realistic given high stated expertise.
+**AI-assisted coding workflows**: Highest trend slope (0.125) among all niches signals real momentum, and expertise is high, but capture index is very high (75.3%) with low velocity_median_views (4,363) — meaning growth is happening but audiences are still small and concentrated. Risk is tooling churn outpacing content shelf-life. Genuine screen-recorded workflows from real practitioners are the only credible format here.
 
-**Dropshipping / ecommerce reviews** — Flat trend (0.012), 0% breakout, high capture (66.1%). Biggest risk is a mature, oversaturated niche with declining novelty. Low policy risk (0.03) allows generic review formats, but low velocity (5,188) suggests limited upside.
+**Dropshipping / ecommerce reviews**: High RPM and sponsor density, but flat trend (0.012) and 0% breakout rate suggest saturation and declining novelty. No expertise and low policy risk. Risk is credibility — this niche is associated with hype/scam perception, and no expertise makes that worse.
 
-**Minimalist lifestyle / decluttering** — Low capture_index (45.5%, relatively open) but also low velocity (4,723) and weak RPM ($2-$5). Biggest risk is thin monetization ceiling regardless of format. Zero-risk policy environment permits any format; personal declutter-journey vlogging is the natural fit.
+**Minimalist lifestyle / decluttering**: Middling capture index and low velocity_median_views point to a small, established niche without much room. No policy risk. Risk is low ceiling — this is a niche for authentic lifestyle documentation, not a growth play, and no expertise is a moderate handicap for credibility.
 
-**Web development tutorials** — Very high capture_index (81.2%) despite decent trend_slope (0.075), meaning strong incumbents dominate. Zero policy risk. Biggest risk is competing against established channels with years of SEO/backlog. High expertise is a prerequisite; realistic format is niche-specific tutorials (frameworks, tools) rather than broad "learn to code."
+**Web development tutorials**: Very high capture index (81.2%) with high expertise match, but low velocity_median_views (6,458) and 0% breakout rate. Risk is that top web-dev channels absorb nearly all attention; realistic format is expertise-driven long-form tutorials, not shorts, given no policy risk pressure.
 
-**Language learning shorts** — Weak velocity (1,863) and negligible sponsor density (1.1%) signal poor monetization despite a positive trend_slope (0.091). Biggest risk is near-zero ad/sponsor economics. Zero policy risk permits any format, but the economics don't support the effort regardless.
+**Language learning shorts**: Very low sponsor density (1.1%) despite decent capture index — an unmonetized niche. No policy risk. Risk is thin revenue potential; only viable as a volume-shorts play, and lack of expertise undermines credibility in language teaching.
 
-**'How rich is X' net worth clickbait shorts** *(negative control)* — High capture (70.9%) and strong velocity (28,605) but this is a designated negative control; treat metrics as a baseline reference, not a genuine opportunity signal.
+**"How rich is X" net worth clickbait shorts** [NEGATIVE CONTROL]: High velocity_median_views but this is a control niche and ranks accordingly — treat as a baseline, not an opportunity.
 
-**Beginner guitar lessons** — Weak trend_slope (0.028) and low velocity (3,956), zero policy risk. Biggest risk is a mature, low-growth niche. High stated expertise supports credible tutorial format, but growth ceiling is limited.
+**Beginner guitar lessons**: High expertise match but low trend slope (0.028) and low velocity — a stable but not growing niche. No policy risk. Risk is oversaturation of instructional guitar content; expertise supports credible on-camera lessons but won't overcome flat demand.
 
-**Home recording / bedroom producer tips** — High capture_index (80.6%) with very low velocity (1,884). Biggest risk is a small, saturated niche. Zero policy risk; high expertise matches format needs, but audience size is a hard constraint.
+**Home recording / bedroom producer tips**: Very high capture index (80.6%) with high expertise, but very low velocity_median_views (1,884). Risk is extremely niche audience ceiling. Real human demonstration of production techniques is the only credible angle, but growth expectations should be low.
 
-**'Dark psychology' facts shorts** — Low velocity (4,209), low sponsor density (4.2%), and nonzero policy risk (0.03). Biggest risk is content-moderation ambiguity around psychological-manipulation topics. A fact-based, source-cited format is the safer realistic approach.
+**"Dark psychology" facts shorts**: Low sponsor density and modest metrics throughout; slight policy risk (0.03). No expertise. Risk is content-mill perception and thin differentiation; only survivable as a heavily-produced factual/educational format, not clickbait framing.
 
-**Book summary channels** — Very low velocity (508) and low sponsor density. Biggest risk is thin audience demand at this snapshot. Low policy risk (0.03) permits any format, but the economics are weak.
+**Book summary channels**: Extremely low velocity_median_views (508) despite low policy risk. Risk is thin/low differentiation and possible copyright sensitivity around derivative summarization; no expertise compounds the risk.
 
-**Stoicism / philosophy shorts** — Flat trend (0.010) and modest velocity (8,871). Biggest risk is stagnant growth. Zero-to-low policy risk permits quote/compilation formats, though differentiation is unclear.
+**Stoicism / philosophy shorts**: Flat trend slope (0.010) and no expertise; low sponsor density signals weak monetization. Risk is generic content flooding this space already.
 
-**AI news aggregation** — Very high capture_index (87.7%) and near-zero velocity (46), an extreme outlier suggesting almost no organic reach for new entrants. Biggest risk is total oversaturation by faster-moving incumbents. Policy risk is low-moderate (0.04); format is largely irrelevant given the velocity floor.
+**AI news aggregation**: Extremely high capture index (87.7%) and near-zero velocity_median_views (46) show this niche is fully saturated by aggregators with almost no room for new entrants. Risk is total incumbent lock-in; not a realistic entry point regardless of format.
 
-**Ukulele covers and tutorials** — High capture (74.2%), low velocity (1,587), flat trend (0.022). Biggest risk is a small, mature audience. Zero policy risk; matches high expertise but limited upside.
+**Ukulele covers and tutorials**: High expertise but low trend slope and very low velocity. Risk is a shrinking/niche audience; only sustainable as a passion project, not for growth.
 
-**Luxury lifestyle 'flexing' compilation channels** *(negative control)* — Highest policy_risk in the dataset (0.32) alongside very high capture (84.4%). As a negative control this validates the model's ability to flag risk; not a recommended niche.
+**Luxury lifestyle "flexing" compilations** [NEGATIVE CONTROL]: Highest policy_risk (0.32) of all niches — flagged as a control and scores accordingly. Not a viable recommendation regardless.
 
-**Reddit story narration channels** — Extremely high capture_index (95.8%) and very low velocity (352). Biggest risk is near-total incumbent saturation. Moderate policy risk (0.06); not a realistic entry point at this snapshot.
+**Reddit story narration channels**: Very high capture index (95.8%) and low velocity signal an oversaturated, low-differentiation format. Slight policy risk. No expertise; not recommended.
 
-**Generic motivation speech compilations** *(negative control)* — Negative trend_slope (-0.004), very high capture (94.5%), and elevated policy risk (0.11) — consistent with its role as a negative control confirming the model correctly ranks decaying/risky niches low.
+**Generic motivation speech compilations** [NEGATIVE CONTROL]: Negative trend slope and elevated policy risk (0.11) — a declining, risk-flagged control niche.
 
 ## Fit Analysis
 
-The clear high-score x high-expertise sweet spot does not fully exist in this dataset: the top 3 ranked niches (faceless-automation, personal-finance, home-workout) all carry **no** stated expertise. The highest-ranked niche with genuine expertise alignment is **AI-assisted coding workflows** (rank 8, high expertise) — a legitimate fit, but its composite score (0.236) is well below the top tier. **Music theory explainers** (rank 7, high expertise) and **AI tool reviews** (rank 4, medium expertise) are the closest matches between decent rank and real background.
+The clearest **high-score x high-expertise sweet spot** doesn't fully exist in this data — the top 3 ranked niches (faceless automation, personal finance, home workout) all carry "none" expertise. The best-aligned combination is **AI-assisted coding workflows** (rank 8, high expertise) and **music theory explainers** (rank 7, high expertise), where genuine background exists but composite scores are mid-pack, reflecting real but smaller/harder-to-break-into audiences.
 
-For the top 3 niches — faceless-automation (rank 1), personal-finance-tips (rank 2), and home-workout-no-equipment (rank 3) — all are "possible but you'd be a tourist": entering them means competing without domain credibility. The expertise gap is concrete: faceless-automation requires production/systems skill rather than subject expertise; personal-finance requires either credentialed authority or a credible personal track record to overcome trust-sensitive audience expectations; home-workout requires either fitness credentials or a visible personal transformation story to stand out in a high-capture (68%) field.
+The top 3 ranked niches are all **"possible but you'd be a tourist"** situations: faceless automation, personal finance, and home workout all pair high composite scores with zero stated expertise. The implied gap: personal finance requires credibility around money management that's hard to fake to skeptical audiences; home workout requires either visible fitness results or certification to be trusted long-term; faceless automation is more forgiving of expertise gaps since it's format-driven rather than credibility-driven, but still requires picking a defensible sub-topic.
 
-Lower-ranked high-expertise niches (dev-tutorials-webdev, home-recording-production, guitar-lessons-beginner, ukulele-covers-tutorials) show that expertise alone doesn't guarantee composite strength — these are capped by high capture_index and/or low velocity, meaning the audience ceiling and competitive saturation matter as much as credibility.
+AI tool reviews (rank 4, medium expertise) is a reasonable middle ground — enough familiarity to be credible without deep specialization required.
+
+High-expertise niches (music theory, AI-assisted coding, web dev, guitar, home recording, ukulele) cluster in the lower-middle of the rankings, suggesting genuine expertise here doesn't currently translate to composite-score advantage — these are smaller, high-capture-index spaces rather than growth opportunities.
 
 ## Semi-Passive Honesty Check
 
-1. **faceless-automation-channels** (rank 1): upload_burden_per_month = 1.8 — under 2 uploads a month is genuinely low-effort and closest to passive.
-2. **personal-finance-tips** (rank 2): upload_burden is n/a — not reported, so no honest burden estimate can be given here.
-3. **home-workout-no-equipment** (rank 3): upload_burden_per_month = 4.3 — roughly one video a week; manageable but a real, recurring weekly commitment, not passive.
-4. **ai-tool-reviews** (rank 4): upload_burden is n/a — not reported, so no honest burden estimate can be given here.
-5. **crypto-trading-signals** (rank 5): upload_burden is n/a — not reported, so no honest burden estimate can be given here.
+1. **Faceless automation channels**: upload_burden_per_month = 1.8 — under 2 uploads a month is genuinely low-effort and closest to "semi-passive" of any niche in this dataset.
+2. **Personal finance tips**: upload_burden_per_month = n/a — not reported; can't characterize the workload honestly, so don't assume it's light.
+3. **Home workout / no-equipment fitness**: upload_burden_per_month = 4.3 — roughly one video a week. That's a standing weekly commitment, not passive, though manageable alongside other work.
+4. **AI tool reviews**: upload_burden_per_month = n/a — not reported.
+5. **Crypto trading signals**: upload_burden_per_month = n/a — not reported.
 
-Three of the top 5 niches are missing upload_burden data entirely; treat their semi-passive viability as unknown rather than assumed low.
+Only one of the top 5 niches has a usable upload_burden figure. For the other three, the honest answer is: the data doesn't tell us, and assuming low effort would be guessing.
 
 ## Data Caveats
 
-The validation gate passed ('ok'): all three negative controls (clickbait-net-worth-shorts, luxury-lifestyle-flexing, generic-motivation-compilations) ranked in the bottom half, which supports the model's internal consistency.
+The validation gate passed ("ok" — negative controls ranked in the bottom half), so the ranking mechanism appears to be discriminating correctly between the three planted control niches (net worth clickbait, luxury flexing, motivation compilations) and legitimate candidates.
 
-Beyond that, several structural limits apply to all niches above. This data reflects **survivorship bias** — it only captures channels currently active and visible, not the (likely much larger) set of channels that attempted these niches and quit or were removed; breakout_rate and capture_index figures should be read as conditional on survival. The underlying YouTube/Trends sampling covers roughly the **top 30 channels with ~15 recent videos each per niche** — a snapshot, not a census, so smaller or newer channels outside that sample are invisible to these metrics. Trend_slope figures derive from Google Trends' **relative indexing**, not absolute search volume, so a niche's slope reflects change relative to its own baseline, not comparable absolute demand across niches. Finally, three niches (personal-finance-tips, ai-tool-reviews, crypto-trading-signals, and most others outside rank 1 and 3) report upload_burden as **n/a** — this is a specific data-completeness gap, not a zero-burden signal, and should not be interpreted as low effort by default.
+Beyond that, several structural limits apply to all niches above:
+
+- **Survivorship bias**: this data reflects channels that currently exist and are visible in the sample — it cannot see channels that tried these niches and quit, so breakout_rate and capture_index likely overstate how achievable success looks relative to the true failure rate.
+- **Sampling limits**: metrics are drawn from roughly the top 30 channels per niche and ~15 recent videos each — a snapshot, not a census. Smaller or emerging channels outside that window aren't represented, and recent-video sampling may miss seasonal or older breakout content.
+- **Trends indexing is relative, not absolute**: trend_slope reflects relative search interest over time, not absolute search volume — a rising slope in a tiny niche (e.g. AI news aggregation, velocity_median_views=46) doesn't mean a large audience exists.
+- **Missing upload_burden data**: 19 of 23 niches, including 4 of the top 5 by composite score, have no upload_burden figure reported. Any effort-level claims for those niches beyond what's stated above would be speculation, not data.
 
 The YouTube relevance filter can only evaluate the text of whichever video actually surfaced in search -- a genuinely on-topic channel whose sampled video doesn't restate the niche's search terms may be undercounted or excluded. Sampled channel lists are worth a manual skim, not blind trust.
+
+**Thin sample warning:** **Reddit story narration channels** surfaced only 12 of the targeted 30 channels during ingestion -- every sampled channel there was taken forward with zero filtering headroom, since there weren't enough candidates to rank down to the target of 30. This niche's capture_index, velocity, and breakout_rate are correspondingly more sensitive to any single channel's numbers than a fully-sampled niche's, and should be read with that in mind.
