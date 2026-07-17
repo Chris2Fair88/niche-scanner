@@ -40,12 +40,30 @@ pass `--force`. `--niches slug1,slug2` limits any stage to a subset.
 
 ### Quota reality check
 
-`ingest_youtube.py` estimates YouTube quota cost before it does anything and
-refuses to proceed past 8,000 units without `--confirm` (both configurable
-in `config.yaml`). **Running the full ~23-niche seed list in one shot costs
-~10,100 units** -- over the default free daily quota of 10,000. That's not a
-bug in the estimate; it's the reason the brief calls for scanning in
-batches:
+`ingest_youtube.py` tracks YouTube quota against **two independent buckets**,
+not one shared pool:
+
+- **`search_list_daily_cap`** (default 100) -- `search.list` has its own
+  separate cap of 100 calls/day, counted by call, not by unit. This is the
+  primary, more binding gate: each niche's search terms are queried twice
+  (relevance + date), so search-call count scales directly with the seed
+  list's term count.
+- **`quota_abort_threshold`** (default 8,000 units) -- a local confirm
+  threshold over the general pool covering `channels.list`,
+  `playlistItems.list`, and `videos.list`. This is not a hard daily API
+  quota; it's a safety check the script applies before spending, and
+  proceeding past it just requires `--confirm`.
+
+Both are configurable in `config.yaml`. The script estimates both buckets
+before doing anything and refuses to proceed past either without
+`--confirm`. For the current 23-niche seed list (`niches.yaml`), a full
+single-shot run estimates to **~92 of the 100 daily `search.list` calls**
+and **~943 of the 8,000-unit general pool** -- so a full run currently fits
+in one day under both caps, with the `search.list` cap as the tighter
+constraint (only ~8 calls of headroom). Adding niches or search terms to the
+seed list narrows that headroom fastest, since it's the call-count cap that
+binds first. If you do need to spread ingestion across days -- a larger
+seed list, or added search terms per niche -- batch by `--niches`:
 
 ```powershell
 python -m pipeline.ingest_youtube --niches music-theory-shorts,guitar-lessons-beginner,ukulele-covers-tutorials,home-recording-production,dev-tutorials-webdev,ai-assisted-coding
