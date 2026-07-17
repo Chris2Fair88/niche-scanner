@@ -49,7 +49,7 @@ anthropic:
   # https://docs.claude.com/en/docs/about-claude/models/overview before a run
   # if it's been a while -- Anthropic ships updates frequently.
   model: claude-sonnet-5
-  max_tokens: 4096
+  max_tokens: 8192
 
 # Composite score weights. Must sum to 1.0 across these six components.
 # policy_risk is NOT a weighted component -- it's a 0.5-1.0 multiplier applied

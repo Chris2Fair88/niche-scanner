@@ -112,9 +112,11 @@ def call_sonnet(system_prompt: str, user_content: str, cfg: dict) -> str:
     resp = client.messages.create(
         model=cfg["anthropic"]["model"],
         max_tokens=cfg["anthropic"]["max_tokens"],
+        thinking={"type": "disabled"},
         system=system_prompt,
         messages=[{"role": "user", "content": user_content}],
     )
+    log.info("Synthesis call stop_reason: %s", resp.stop_reason)
     return "".join(block.text for block in resp.content if getattr(block, "type", None) == "text")
 
 
