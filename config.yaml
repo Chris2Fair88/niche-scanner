@@ -24,6 +24,40 @@ youtube:
   breakout_window_months: 12      # "new channel" window for breakout_rate
   velocity_window_days: 90        # recency window for the velocity metric
 
+trend_scan:
+  # scan_trending.py -- a lighter, more frequent check for what's breaking
+  # out *right now* within a small set of niches relevant to active content
+  # plans, as opposed to score.py's full 23-niche, 12-month breakout_rate.
+  default_niches:
+    - faceless-automation-channels
+    - ai-tool-reviews
+    - ai-assisted-coding
+    - ai-agent-news
+  videos_per_term: 25       # search.list maxResults per term (order=date only --
+                            # half of a normal ingest call, since this only needs
+                            # recent uploads, not a full relevance pass)
+  recent_window_days: 14    # only videos published within this window count as
+                            # "trending right now"
+  min_age_hours: 3          # skip videos younger than this -- views/hour is noisy
+                            # or meaningless in the first few hours after publish
+                            # (a 20-minute-old video with 40 views isn't a 120-
+                            # views/hour breakout, it's just new)
+  velocity_outlier_z: 2.5   # robust (median + MAD) z-score threshold to flag
+                            # "breaking out now". MAD instead of mean/stdev for the
+                            # same reason velocity's cross-niche normalization moved
+                            # to log1p: a single freak viral video shouldn't be able
+                            # to drag the "typical" baseline for its own niche and
+                            # hide itself (and everything else) as not-quite-unusual.
+  min_absolute_velocity: 50 # views/hour floor -- guards against a quiet niche
+                            # flagging its least-boring video as a statistical
+                            # "outlier" when nothing in it is actually trending
+  min_sample_for_stats: 5   # below this many recent candidate videos, median/MAD
+                            # isn't meaningful; fall back to a stricter absolute-
+                            # velocity-only bar instead of asserting a statistical
+                            # signal the sample can't support
+  max_shortlist_per_niche: 5 # cap so one freak viral video can't dominate the
+                            # whole cross-niche shortlist fed to the synthesis call
+
 trends:
   timeframe: "today 5-y"          # pytrends timeframe string
   slope_window_months: 24         # trailing window used for trend_slope

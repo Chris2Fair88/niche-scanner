@@ -332,64 +332,12 @@ def main() -> None:
     conn = common.connect_db(args.run_date)
 
     estimate = estimate_quota(niches, cfg)
-    already_search_calls = common.count_quota_calls(conn, args.run_date, "youtube", "search")
-    already_general_units = common.sum_quota(conn, args.run_date, "youtube", exclude_method="search")
-
-    projected_search_calls = estimate["total_search_calls"] + already_search_calls
-    projected_general_units = estimate["total_general_units"] + already_general_units
-
-    search_cap = cfg["youtube"]["search_list_daily_cap"]
-    general_threshold = cfg["youtube"]["quota_abort_threshold"]
-
-    log.info(
-        "Projected for this run: %d search.list calls (%d already used today, cap %d/day) across %d niches | "
-        "~%d general-pool units (%d already logged today, running total ~%d, threshold %d)",
-        estimate["total_search_calls"],
-        already_search_calls,
-        search_cap,
-        len(niches),
-        estimate["total_general_units"],
-        already_general_units,
-        projected_general_units,
-        general_threshold,
+    ok = common.check_youtube_quota(
+        conn, args.run_date, cfg,
+        estimate["total_search_calls"], estimate["total_general_units"],
+        args.confirm, log,
     )
-
-    should_abort = False
-
-    # Primary gate: search.list's own 100-calls/day cap. This is independent
-    # of the general 10k-unit pool below and, in practice, the one that
-    # actually binds -- search is the only endpoint here cheap enough in
-    # general-pool units (1) to run out of calls long before it runs out of
-    # units.
-    if projected_search_calls > search_cap and not args.confirm:
-        log.error(
-            "search.list cap exceeded: %d new + %d already used today = %d calls, "
-            "over the %d/day cap. This does not share the general unit pool -- "
-            "narrowing --niches or waiting for the cap to reset is the only fix "
-            "short of --confirm.",
-            estimate["total_search_calls"],
-            already_search_calls,
-            projected_search_calls,
-            search_cap,
-        )
-        should_abort = True
-
-    # Secondary gate: the general 10k-unit pool (channels/playlistItems/videos).
-    # Kept for completeness, but with search_results_per_call/top_channels_sampled
-    # at their current config values this is unlikely to ever bind before the
-    # search cap does.
-    if projected_general_units > general_threshold and not args.confirm:
-        log.error(
-            "General-pool quota (~%d new + %d already logged today = ~%d) exceeds threshold (%d). "
-            "Re-run with --confirm to proceed, or narrow the run with --niches.",
-            estimate["total_general_units"],
-            already_general_units,
-            projected_general_units,
-            general_threshold,
-        )
-        should_abort = True
-
-    if should_abort:
+    if not ok:
         sys.exit(1)
 
     session = requests.Session()

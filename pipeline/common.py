@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +26,13 @@ CONFIG_PATH = BASE_DIR / "config.yaml"
 
 def today_str() -> str:
     return date.today().isoformat()
+
+
+def parse_dt(s: str) -> datetime:
+    # YouTube API timestamps are RFC3339, e.g. 2025-03-01T12:00:00Z. Shared
+    # by score.py (channel/video age) and scan_trending.py (video velocity)
+    # so both parse YouTube timestamps identically.
+    return datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
 def run_dir(run_date: str) -> Path:
@@ -158,7 +165,8 @@ CREATE TABLE IF NOT EXISTS quota_log (
     niche_slug TEXT,
     units INTEGER,
     method TEXT,
-    logged_at TEXT
+    logged_at TEXT,
+    real_date TEXT
 );
 
 CREATE TABLE IF NOT EXISTS run_meta (
@@ -177,6 +185,7 @@ def connect_db(run_date: str) -> sqlite3.Connection:
     conn.executescript(SCHEMA)
     conn.commit()
     _migrate_quota_log_method(conn)
+    _migrate_quota_log_real_date(conn)
     return conn
 
 
@@ -199,44 +208,163 @@ def _migrate_quota_log_method(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _migrate_quota_log_real_date(conn: sqlite3.Connection) -> None:
+    """quota_log predates the real_date column, added once it became clear
+    that Google's actual 100-calls/day cap resets on real calendar time --
+    not on this project's run_date label, which is a data-folder identifier
+    deliberately decoupled from real time (e.g. a batch ingest resumed
+    across several real days under one frozen run_date, or a lighter scan
+    script run on a genuinely different real day while pointed at an older
+    run_date for data continuity). Add the column to older DBs, and
+    backfill existing rows from logged_at's date portion -- logged_at is
+    already a real UTC timestamp recorded at insert time, unlike run_date --
+    rather than from run_date, since backfilling from run_date would just
+    recreate the exact bug this migration exists to fix."""
+    cols = [r["name"] for r in conn.execute("PRAGMA table_info(quota_log)").fetchall()]
+    if "real_date" not in cols:
+        conn.execute("ALTER TABLE quota_log ADD COLUMN real_date TEXT")
+        conn.commit()
+    conn.execute("UPDATE quota_log SET real_date = substr(logged_at, 1, 10) WHERE real_date IS NULL AND logged_at IS NOT NULL")
+    conn.commit()
+
+
 def log_quota(conn: sqlite3.Connection, run_date: str, source: str, niche_slug: str, units: int, method: str) -> None:
+    """run_date is the data-folder label this call is attributed to (which
+    niche batch/continuity run it belongs to). real_date is the actual
+    system date at logging time -- independent of run_date, and NOT taken
+    from the run_date parameter -- because that's what quota enforcement
+    (check_youtube_quota / count_quota_calls / sum_quota) keys on: Google's
+    real 100-calls/day cap resets on real calendar time, not on this
+    project's internal run_date labeling."""
     import datetime as _dt
+    now = _dt.datetime.utcnow()
     conn.execute(
-        "INSERT INTO quota_log (run_date, source, niche_slug, units, method, logged_at) VALUES (?, ?, ?, ?, ?, ?)",
-        (run_date, source, niche_slug, units, method, _dt.datetime.utcnow().isoformat()),
+        "INSERT INTO quota_log (run_date, source, niche_slug, units, method, logged_at, real_date) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (run_date, source, niche_slug, units, method, now.isoformat(), now.date().isoformat()),
     )
     conn.commit()
 
 
-def sum_quota(conn: sqlite3.Connection, run_date: str, source: str, exclude_method: str | None = None) -> int:
-    """Total units already logged for this run_date + source (e.g. prior
-    ingest runs today), so a fresh estimate can be checked against the
-    threshold as a running daily total rather than in isolation. Pass
-    exclude_method to omit a bucket (e.g. 'search') that's tracked against
-    its own separate cap rather than this unit total."""
+def sum_quota(conn: sqlite3.Connection, real_date: str, source: str, exclude_method: str | None = None) -> int:
+    """Total units already logged for this real_date + source (e.g. prior
+    ingest runs earlier today, in real calendar time), so a fresh estimate
+    can be checked against the threshold as a running daily total rather
+    than in isolation. Filters on real_date, not run_date -- Google's quota
+    resets on real calendar time regardless of which data-folder label a
+    call happened to be attributed to. Pass exclude_method to omit a bucket
+    (e.g. 'search') that's tracked against its own separate cap rather than
+    this unit total."""
     if exclude_method is None:
         row = conn.execute(
-            "SELECT COALESCE(SUM(units), 0) AS total FROM quota_log WHERE run_date = ? AND source = ?",
-            (run_date, source),
+            "SELECT COALESCE(SUM(units), 0) AS total FROM quota_log WHERE real_date = ? AND source = ?",
+            (real_date, source),
         ).fetchone()
     else:
         row = conn.execute(
             "SELECT COALESCE(SUM(units), 0) AS total FROM quota_log "
-            "WHERE run_date = ? AND source = ? AND method IS NOT ?",
-            (run_date, source, exclude_method),
+            "WHERE real_date = ? AND source = ? AND method IS NOT ?",
+            (real_date, source, exclude_method),
         ).fetchone()
     return row["total"]
 
 
-def count_quota_calls(conn: sqlite3.Connection, run_date: str, source: str, method: str) -> int:
-    """Number of logged calls (rows, not units) for this run_date + source +
+def count_quota_calls(conn: sqlite3.Connection, real_date: str, source: str, method: str) -> int:
+    """Number of logged calls (rows, not units) for this real_date + source +
     method -- used for caps that limit call count rather than unit spend
-    (search.list's separate 100-calls/day cap)."""
+    (search.list's separate 100-calls/day cap). Filters on real_date, not
+    run_date, for the same reason as sum_quota above."""
     row = conn.execute(
-        "SELECT COUNT(*) AS total FROM quota_log WHERE run_date = ? AND source = ? AND method = ?",
-        (run_date, source, method),
+        "SELECT COUNT(*) AS total FROM quota_log WHERE real_date = ? AND source = ? AND method = ?",
+        (real_date, source, method),
     ).fetchone()
     return row["total"]
+
+
+def check_youtube_quota(
+    conn: sqlite3.Connection,
+    run_date: str,
+    cfg: dict,
+    search_calls_needed: int,
+    general_units_needed: int,
+    confirm: bool,
+    log: logging.Logger,
+) -> bool:
+    """Shared gate for YouTube's two independent quota buckets: search.list's
+    own 100-calls/day cap (call-counted) and the general channels/
+    playlistItems/videos.list unit pool (quota_abort_threshold). Originally
+    lived inline in ingest_youtube.py's main(); extracted here so every
+    script that spends YouTube quota (ingest_youtube.py, scan_trending.py)
+    calls this one function, instead of each keeping its own copy of the
+    threshold logic that could silently drift out of sync with the other.
+
+    The check is keyed on today's real calendar date (real_date), NOT on
+    run_date -- run_date is accepted only so it can be included in the log
+    message for context (which data-folder batch this call belongs to).
+    Google's 100-calls/day cap resets on real calendar time regardless of
+    this project's internal run_date labeling, so a search.list call made
+    by either script today counts against the same daily cap the other
+    checks today, even if they're pointed at different (or the same,
+    reused-across-many-real-days) run_date folders.
+
+    Returns True if the run should proceed, False if it should abort (the
+    caller decides how to abort -- sys.exit, raise, etc).
+    """
+    real_date = date.today().isoformat()
+    already_search_calls = count_quota_calls(conn, real_date, "youtube", "search")
+    already_general_units = sum_quota(conn, real_date, "youtube", exclude_method="search")
+
+    projected_search_calls = search_calls_needed + already_search_calls
+    projected_general_units = general_units_needed + already_general_units
+
+    search_cap = cfg["youtube"]["search_list_daily_cap"]
+    general_threshold = cfg["youtube"]["quota_abort_threshold"]
+
+    log.info(
+        "Projected for this run (run_date=%s, real calendar date=%s): %d search.list calls "
+        "(%d already used today, cap %d/day) | ~%d general-pool units (%d already logged "
+        "today, running total ~%d, threshold %d)",
+        run_date,
+        real_date,
+        search_calls_needed,
+        already_search_calls,
+        search_cap,
+        general_units_needed,
+        already_general_units,
+        projected_general_units,
+        general_threshold,
+    )
+
+    ok = True
+
+    # Primary gate: search.list's own 100-calls/day cap. Independent of the
+    # general unit pool below and, in practice, the one that actually binds.
+    if projected_search_calls > search_cap and not confirm:
+        log.error(
+            "search.list cap exceeded: %d new + %d already used today = %d calls, "
+            "over the %d/day cap. This does not share the general unit pool -- "
+            "narrowing scope or waiting for the cap to reset is the only fix "
+            "short of --confirm.",
+            search_calls_needed,
+            already_search_calls,
+            projected_search_calls,
+            search_cap,
+        )
+        ok = False
+
+    # Secondary gate: the general unit pool (channels/playlistItems/videos).
+    if projected_general_units > general_threshold and not confirm:
+        log.error(
+            "General-pool quota (~%d new + %d already logged today = ~%d) exceeds threshold (%d). "
+            "Re-run with --confirm to proceed, or narrow the run's scope.",
+            general_units_needed,
+            already_general_units,
+            projected_general_units,
+            general_threshold,
+        )
+        ok = False
+
+    return ok
 
 
 def get_logger(name: str) -> logging.Logger:

@@ -37,11 +37,6 @@ SYNTHETIC_VOICE_MARKERS = [
 ]
 
 
-def parse_dt(s: str) -> datetime:
-    # YouTube API timestamps are RFC3339, e.g. 2025-03-01T12:00:00Z
-    return datetime.fromisoformat(s.replace("Z", "+00:00"))
-
-
 def months_between(d1: datetime, d2: date) -> float:
     return (d2.year - d1.year) * 12 + (d2.month - d1.month) + (d2.day - d1.day) / 30.44
 
@@ -139,7 +134,7 @@ def compute_breakout_and_burden(channels_json, videos_by_channel, run_date: str,
         published = ch.get("snippet", {}).get("publishedAt")
         if not published:
             continue
-        age_months = months_between(parse_dt(published), now)
+        age_months = months_between(common.parse_dt(published), now)
         is_new = age_months <= window_months
         vids = (videos_by_channel or {}).get(ch["id"], [])
         has_breakout = any(int(v.get("statistics", {}).get("viewCount", 0)) >= qualifying_threshold for v in vids)
@@ -153,7 +148,7 @@ def compute_breakout_and_burden(channels_json, videos_by_channel, run_date: str,
     rates = []
     for cid in successful_new_ids:
         vids = (videos_by_channel or {}).get(cid, [])
-        dates = sorted(parse_dt(v["snippet"]["publishedAt"]) for v in vids if v.get("snippet", {}).get("publishedAt"))
+        dates = sorted(common.parse_dt(v["snippet"]["publishedAt"]) for v in vids if v.get("snippet", {}).get("publishedAt"))
         if len(dates) < 2:
             continue
         span_days = (dates[-1] - dates[0]).days
@@ -191,7 +186,7 @@ def compute_velocity(videos_by_channel, run_date: str, cfg: dict):
             pub = v.get("snippet", {}).get("publishedAt")
             if not pub:
                 continue
-            if (now - parse_dt(pub).date()).days <= window_days:
+            if (now - common.parse_dt(pub).date()).days <= window_days:
                 recent.append(int(v.get("statistics", {}).get("viewCount", 0)))
     return median(recent) if recent else None
 
