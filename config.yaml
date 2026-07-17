@@ -12,6 +12,15 @@ youtube:
   top_channels_sampled: 30        # channels taken forward to playlistItems/videos.list
   videos_per_channel: 15          # recent uploads pulled per sampled channel
   breakout_view_threshold: 100000 # "breakout video" view count bar
+  breakout_qualifying_multiplier: 2.0
+                                  # a video only counts toward breakout_rate if it clears
+                                  # threshold * this multiplier, not just the raw threshold.
+                                  # Added after diagnosing the validation-gate failure: every
+                                  # breakout channel across all 23 niches fell into one of two
+                                  # clusters -- 1.2x-1.7x threshold (marginal, e.g. a content-mill
+                                  # niche's lucky one-off spike) or 6x-42x (genuine, repeated
+                                  # success) -- with nothing in between, so 2.0x cleanly separates
+                                  # them without being a fragile hairline cut
   breakout_window_months: 12      # "new channel" window for breakout_rate
   velocity_window_days: 90        # recency window for the velocity metric
 
@@ -54,6 +63,16 @@ weights:
   upload_burden: 0.10   # scored inversely: lower burden = better semi-passive fit
 
 policy_risk_multiplier:
+  min: 0.5
+  max: 1.0
+
+# Added after the validation gate failed on real data: capture_index (top-3
+# channels' share of a niche's sampled views) was computed and stored but
+# never factored into the composite, letting a niche that's essentially a
+# monopoly score on breakout_rate/velocity alone. Same multiplier pattern as
+# policy_risk_multiplier above rather than a 7th weighted component, so the
+# six weights don't need re-deriving to sum to 1.0.
+capture_index_multiplier:
   min: 0.5
   max: 1.0
 

@@ -122,6 +122,16 @@ def compute_breakout_and_burden(channels_json, videos_by_channel, run_date: str,
     now = date.fromisoformat(run_date)
     window_months = cfg["youtube"]["breakout_window_months"]
     threshold = cfg["youtube"]["breakout_view_threshold"]
+    # Diagnosed against real data (2026-07-15 run): every channel that ever
+    # qualified as "breakout" across all 23 niches fell into one of two
+    # clean clusters -- either 2 videos barely clearing the raw threshold
+    # (1.2x-1.7x) or 7-8 videos dramatically clearing it (6x-42x), with
+    # nothing in between. A qualifying-video-count threshold can't separate
+    # these (both marginal cases already have 2 videos, not 1), but a
+    # magnitude bar does, cleanly, on the full dataset -- not just the one
+    # negative control it was diagnosed against.
+    qualifying_multiplier = cfg["youtube"]["breakout_qualifying_multiplier"]
+    qualifying_threshold = threshold * qualifying_multiplier
 
     breakout_count = 0
     successful_new_ids = []
@@ -132,7 +142,7 @@ def compute_breakout_and_burden(channels_json, videos_by_channel, run_date: str,
         age_months = months_between(parse_dt(published), now)
         is_new = age_months <= window_months
         vids = (videos_by_channel or {}).get(ch["id"], [])
-        has_breakout = any(int(v.get("statistics", {}).get("viewCount", 0)) >= threshold for v in vids)
+        has_breakout = any(int(v.get("statistics", {}).get("viewCount", 0)) >= qualifying_threshold for v in vids)
         if is_new and has_breakout:
             breakout_count += 1
             successful_new_ids.append(ch["id"])
@@ -274,6 +284,18 @@ def minmax_normalize(values: dict) -> dict:
     return out
 
 
+def minmax_normalize_log(values: dict) -> dict:
+    """Same contract as minmax_normalize, but log1p-transforms present values
+    first. Velocity-specific: plain min-max let a single extreme outlier
+    (one niche's median recent views ~3x the next-highest) normalize to
+    ~1.0 and compress every other niche's relative standing toward 0,
+    letting that one niche's composite look artificially strong. log1p
+    keeps "higher velocity is better" while shrinking the gap a single
+    outlier can open up, without touching the other five metrics."""
+    transformed = {slug: (np.log1p(v) if v is not None else None) for slug, v in values.items()}
+    return minmax_normalize(transformed)
+
+
 def policy_multiplier(risk_pct, cfg: dict) -> float:
     lo = cfg["policy_risk_multiplier"]["min"]
     hi = cfg["policy_risk_multiplier"]["max"]
@@ -281,6 +303,20 @@ def policy_multiplier(risk_pct, cfg: dict) -> float:
         return lo  # unknown risk -> treat conservatively, don't reward missing data
     risk_pct = max(0.0, min(1.0, risk_pct))
     return hi - risk_pct * (hi - lo)
+
+
+def capture_multiplier(capture_index_pct, cfg: dict) -> float:
+    """Same shape as policy_multiplier: a niche that's essentially owned by
+    its top 3 channels gets its composite discounted, on top of (not
+    instead of) whatever breakout_rate/velocity/etc already earned it --
+    otherwise a monopoly niche with one lucky breakout video or high
+    incumbent-driven velocity can outscore a genuinely open one."""
+    lo = cfg["capture_index_multiplier"]["min"]
+    hi = cfg["capture_index_multiplier"]["max"]
+    if capture_index_pct is None:
+        return lo  # unknown capture -> treat conservatively, don't reward missing data
+    capture_index_pct = max(0.0, min(1.0, capture_index_pct))
+    return hi - capture_index_pct * (hi - lo)
 
 
 def run(run_date: str, niches_filter: list[str] | None = None) -> str:
@@ -341,7 +377,7 @@ def run(run_date: str, niches_filter: list[str] | None = None) -> str:
     # --- normalize across the niche set ---
     norm_breakout = minmax_normalize({s: r["breakout_rate"] for s, r in raw.items()})
     norm_trend = minmax_normalize({s: r["trend_slope"] for s, r in raw.items()})
-    norm_velocity = minmax_normalize({s: r["velocity"] for s, r in raw.items()})
+    norm_velocity = minmax_normalize_log({s: r["velocity"] for s, r in raw.items()})
     norm_sponsor = minmax_normalize({s: r["sponsor_density"] for s, r in raw.items()})
     norm_rpm = minmax_normalize({s: (r["rpm_low"] + r["rpm_high"]) / 2 for s, r in raw.items()})
     norm_upload_raw = minmax_normalize({s: r["upload_burden"] for s, r in raw.items()})
@@ -358,6 +394,7 @@ def run(run_date: str, niches_filter: list[str] | None = None) -> str:
     composite = {}
     for slug in raw:
         pm = policy_multiplier(raw[slug]["policy_risk"], cfg)
+        cm = capture_multiplier(raw[slug]["capture_index"], cfg)
         base = (
             w["breakout_rate"] * norm_breakout[slug]
             + w["trend_slope"] * norm_trend[slug]
@@ -366,7 +403,7 @@ def run(run_date: str, niches_filter: list[str] | None = None) -> str:
             + w["rpm_range"] * norm_rpm[slug]
             + w["upload_burden"] * norm_upload[slug]
         )
-        composite[slug] = base * pm
+        composite[slug] = base * pm * cm
 
     ranked = sorted(composite.keys(), key=lambda s: composite[s], reverse=True)
     rank_of = {slug: i + 1 for i, slug in enumerate(ranked)}
