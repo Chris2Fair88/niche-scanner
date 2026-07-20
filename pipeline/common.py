@@ -17,6 +17,7 @@ import yaml
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 REPORTS_DIR = BASE_DIR / "reports"
+SCRIPTS_DIR = BASE_DIR / "scripts"
 PROMPTS_DIR = BASE_DIR / "prompts"
 
 NICHES_PATH = BASE_DIR / "niches.yaml"

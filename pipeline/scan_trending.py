@@ -276,6 +276,12 @@ def run(run_date: str, niches_filter: list[str] | None, confirm: bool) -> str:
 
     conn.close()
 
+    # Structured companion to the markdown report below, so downstream
+    # consumers (produce_script.py) can ground on this run's real candidate
+    # data directly instead of re-parsing markdown or re-spending quota to
+    # re-fetch it themselves.
+    common.write_json(common.source_dir(run_date, "trend_scan") / "shortlist.json", niche_results)
+
     total_candidates = sum(len(nr["candidates"]) for nr in niche_results)
     table = build_shortlist_table(niche_results)
 

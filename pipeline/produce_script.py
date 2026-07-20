@@ -1,0 +1,201 @@
+"""Phase 4 (ad hoc) -- individual video script generation.
+
+Generates a shot-list-style script (hook / setup / turn / payoff / CTA,
+each with a voiceover line, on-screen caption, and visual/shot note) for a
+single target niche, grounded in whatever real data the rest of the
+pipeline has already produced for it: score.py's league-table metrics
+(scanner.db's `scores` table) and/or scan_trending.py's structured
+shortlist of currently-breaking-out videos.
+
+This deliberately does NOT support free-text topics with no corresponding
+niche in niches.yaml: the entire point is grounding in real, current
+numbers rather than a generic prompt with the topic swapped, and there's
+no real data to ground on for a niche this pipeline has never scored or
+scanned. --topic resolves against niches.yaml's slugs/labels; if neither
+score.py nor scan_trending.py has anything for the resolved niche, this
+refuses to generate rather than quietly writing an ungrounded script.
+
+Reuses report.py's call_sonnet() (thinking disabled, adequate max_tokens)
+directly rather than reimplementing it -- that's the exact bug already
+found and fixed once in report.py itself. Also reuses report.py's
+fetch_rows()/fmt_num()/fmt_pct() rather than re-querying scanner.db or
+re-formatting metrics from scratch.
+
+Output: scripts/<niche-slug>-<run_date>.md, tracked in git the same way
+reports/ and its contents are.
+"""
+from __future__ import annotations
+
+import argparse
+import sys
+
+from pipeline import common
+from pipeline.report import call_sonnet, estimate_tokens, fetch_rows, fmt_num, fmt_pct
+
+log = common.get_logger("produce_script")
+
+
+def resolve_niche_slug(topic: str | None, conn) -> tuple[str, str]:
+    """No topic -> current rank-1 niche from score.py's output for this
+    run_date (reusing report.fetch_rows(), already ordered by rank ASC).
+    A topic -> resolved against niches.yaml by slug or label (exact match
+    first, then a softer label-substring match), since real grounding data
+    only exists for niches score.py/scan_trending.py actually track. A
+    topic that doesn't resolve is a hard error, not a fallback to a
+    generic script -- see the module docstring."""
+    if topic is None:
+        rows = fetch_rows(conn)
+        if not rows:
+            log.error("No scores found for this run-date. Run score.py first, or pass --topic.")
+            sys.exit(1)
+        top = rows[0]
+        return top["niche_slug"], top["label"]
+
+    niches = common.load_niches()
+    topic_l = topic.strip().lower()
+    for n in niches:
+        if n["slug"].lower() == topic_l or n["label"].lower() == topic_l:
+            return n["slug"], n["label"]
+    for n in niches:
+        if topic_l in n["label"].lower():
+            return n["slug"], n["label"]
+
+    log.error(
+        "'%s' doesn't match any niche slug or label in niches.yaml. "
+        "produce_script.py only generates scripts for niches this pipeline "
+        "actually tracks -- pass an exact slug or label from niches.yaml.",
+        topic,
+    )
+    sys.exit(1)
+
+
+def get_score_row(conn, niche_slug: str) -> dict | None:
+    for r in fetch_rows(conn):
+        if r["niche_slug"] == niche_slug:
+            return r
+    return None
+
+
+def load_trend_candidates(niche_slug: str, trend_date: str) -> list[dict] | None:
+    """scan_trending.py's structured shortlist for trend_date, if that
+    script has been run on that day and found candidates for this niche.
+    trend_date is deliberately independent of run_date (the score.py data
+    batch): trending activity is always "as of now", not tied to whichever
+    run_date the composite scores happen to be frozen at."""
+    path = common.source_dir(trend_date, "trend_scan") / "shortlist.json"
+    if not path.exists():
+        return None
+    niche_results = common.read_json(path)
+    for nr in niche_results:
+        if nr["slug"] == niche_slug:
+            return nr["candidates"] or None
+    return None
+
+
+def build_grounding_block(score_row: dict | None, run_date: str, trend_candidates: list[dict] | None, trend_date: str) -> str:
+    """Deterministic, Python-generated summary of exactly what real data
+    this run is grounded in -- same principle as report.py's league table
+    being generated in Python rather than by the LLM. Embedded verbatim in
+    both the prompt sent to Claude and the output file, so the two always
+    match and grounding is auditable at a glance."""
+    lines = []
+    if score_row:
+        lines.append(
+            f"- **score.py metrics** (run_date={run_date}): rank {score_row['rank']}, "
+            f"composite {fmt_num(score_row['composite'], 3)}, "
+            f"breakout_rate {fmt_pct(score_row['breakout_rate'])}, "
+            f"trend_slope {fmt_num(score_row['trend_slope'], 3)}, "
+            f"velocity_median_views {fmt_num(score_row['velocity'])}, "
+            f"capture_index {fmt_pct(score_row['capture_index'])}, "
+            f"sponsor_density {fmt_pct(score_row['sponsor_density'])}, "
+            f"policy_risk {fmt_num(score_row['policy_risk'], 2) if score_row['policy_risk'] is not None else 'n/a'}"
+        )
+    else:
+        lines.append(f"- **score.py metrics**: none available for this niche at run_date={run_date}.")
+
+    if trend_candidates:
+        lines.append(f"- **scan_trending.py shortlist** (trend_date={trend_date}, {len(trend_candidates)} candidate(s)):")
+        for c in trend_candidates:
+            z = fmt_num(c.get("robust_z"), 2) if c.get("robust_z") is not None else "n/a (small sample)"
+            lines.append(
+                f"  - \"{c['title']}\" by {c['channel_title']} -- {fmt_num(c['view_count'])} views, "
+                f"{fmt_num(c['age_hours'], 1)}h old, velocity {fmt_num(c['velocity'], 1)} views/hour, robust_z={z}"
+            )
+    else:
+        lines.append(f"- **scan_trending.py shortlist**: none available for this niche as of trend_date={trend_date}.")
+
+    return "\n".join(lines)
+
+
+def run(run_date: str, topic: str | None, trend_date: str) -> str:
+    cfg = common.load_config()
+    conn = common.connect_db(run_date)
+
+    niche_slug, niche_label = resolve_niche_slug(topic, conn)
+    score_row = get_score_row(conn, niche_slug)
+    conn.close()
+
+    trend_candidates = load_trend_candidates(niche_slug, trend_date)
+
+    if score_row is None and not trend_candidates:
+        log.error(
+            "No real grounding data available for '%s' -- score.py has no row for "
+            "run_date=%s and scan_trending.py has no shortlist for trend_date=%s. "
+            "Run score.py and/or scan_trending.py for this niche first.",
+            niche_slug, run_date, trend_date,
+        )
+        sys.exit(1)
+
+    grounding_block = build_grounding_block(score_row, run_date, trend_candidates, trend_date)
+
+    system_prompt = (common.PROMPTS_DIR / "produce_script.md").read_text(encoding="utf-8")
+    user_content = (
+        f"Target niche: {niche_label} (slug: {niche_slug})\n\n"
+        f"Real data available for this niche:\n{grounding_block}\n"
+    )
+
+    est = estimate_tokens(system_prompt) + estimate_tokens(user_content)
+    log.info("Estimated input tokens for the synthesis call: ~%d", est)
+
+    log.info("Calling %s to draft a script for '%s'...", cfg["anthropic"]["model"], niche_slug)
+    script_body = call_sonnet(system_prompt, user_content, cfg)
+
+    header = (
+        f"# Video Script -- {niche_label} -- {run_date}\n\n"
+        f"**Target niche:** {niche_label} (slug: `{niche_slug}`)\n\n"
+        f"**Grounding data used:**\n{grounding_block}\n"
+    )
+
+    script_md = f"{header}\n## Script\n\n{script_body.strip()}\n"
+
+    out_path = common.SCRIPTS_DIR / f"{niche_slug}-{run_date}.md"
+    common.SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(script_md)
+    log.info("Script written to %s", out_path)
+    return str(out_path)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Generate a shot-list-style video script for a niche, grounded in real pipeline data",
+    )
+    parser.add_argument(
+        "--run-date", default=common.today_str(),
+        help="Which data/{run_date}/scanner.db to pull score.py metrics from",
+    )
+    parser.add_argument(
+        "--topic", default=None,
+        help="Niche slug or label from niches.yaml; defaults to the current rank-1 niche for --run-date",
+    )
+    parser.add_argument(
+        "--trend-date", default=common.today_str(),
+        help="Which data/{trend_date}/trend_scan/shortlist.json to check for fresh scan_trending.py "
+             "grounding -- independent of --run-date, since trending data is always as-of-now",
+    )
+    args = parser.parse_args()
+    run(args.run_date, args.topic, args.trend_date)
+
+
+if __name__ == "__main__":
+    main()
