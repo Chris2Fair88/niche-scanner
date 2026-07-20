@@ -116,3 +116,12 @@ negative_controls:
   - generic-motivation-compilations
   - luxury-lifestyle-flexing
   - clickbait-net-worth-shorts
+
+build_log:
+  # produce_script.py surfaces this many of BUILD_LOG.yaml's most recent
+  # entries as candidate narrative material -- real bugs found/fixed,
+  # milestones reached -- alongside score.py/scan_trending.py data. Kept
+  # small and recent-biased on purpose: an old fix from months ago is
+  # weaker "right now" story material than this week's, and dumping every
+  # entry ever recorded just gives the model more to ignore.
+  recent_entries_for_grounding: 5

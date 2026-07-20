@@ -4,8 +4,16 @@ Generates a shot-list-style script (hook / setup / turn / payoff / CTA,
 each with a voiceover line, on-screen caption, and visual/shot note) for a
 single target niche, grounded in whatever real data the rest of the
 pipeline has already produced for it: score.py's league-table metrics
-(scanner.db's `scores` table) and/or scan_trending.py's structured
-shortlist of currently-breaking-out videos.
+(scanner.db's `scores` table), scan_trending.py's structured shortlist of
+currently-breaking-out videos, and BUILD_LOG.yaml's real project
+history -- bugs actually found and fixed, milestones actually reached.
+
+The build-log source exists because a manual-vs-generated script
+comparison found the manual script won largely on narrative: it told the
+true story of the validation gate failing twice and real bugs getting
+fixed, while a script grounded only in aggregate metrics had nothing with
+comparable stakes to draw on. BUILD_LOG.yaml gives future generations that
+same kind of real, verifiable material -- not niche-specific, but real.
 
 This deliberately does NOT support free-text topics with no corresponding
 niche in niches.yaml: the entire point is grounding in real, current
@@ -14,6 +22,8 @@ no real data to ground on for a niche this pipeline has never scored or
 scanned. --topic resolves against niches.yaml's slugs/labels; if neither
 score.py nor scan_trending.py has anything for the resolved niche, this
 refuses to generate rather than quietly writing an ungrounded script.
+(BUILD_LOG.yaml alone never satisfies this check -- it's supplementary
+color, not a substitute for niche-specific data.)
 
 Reuses report.py's call_sonnet() (thinking disabled, adequate max_tokens)
 directly rather than reimplementing it -- that's the exact bug already
@@ -92,7 +102,22 @@ def load_trend_candidates(niche_slug: str, trend_date: str) -> list[dict] | None
     return None
 
 
-def build_grounding_block(score_row: dict | None, run_date: str, trend_candidates: list[dict] | None, trend_date: str) -> str:
+def get_recent_build_log_entries(cfg: dict) -> list[dict]:
+    """The most recent N entries from BUILD_LOG.yaml (chronological,
+    oldest first, so the tail is the most recent), per config.yaml's
+    build_log.recent_entries_for_grounding. Unlike score_row/trend
+    candidates, this isn't niche-specific -- it's real project history any
+    script can draw on for narrative material with actual stakes."""
+    entries = common.load_build_log()
+    n = cfg.get("build_log", {}).get("recent_entries_for_grounding", 5)
+    return entries[-n:] if n else entries
+
+
+def build_grounding_block(
+    score_row: dict | None, run_date: str,
+    trend_candidates: list[dict] | None, trend_date: str,
+    build_log_entries: list[dict] | None = None,
+) -> str:
     """Deterministic, Python-generated summary of exactly what real data
     this run is grounded in -- same principle as report.py's league table
     being generated in Python rather than by the LLM. Embedded verbatim in
@@ -123,6 +148,16 @@ def build_grounding_block(score_row: dict | None, run_date: str, trend_candidate
             )
     else:
         lines.append(f"- **scan_trending.py shortlist**: none available for this niche as of trend_date={trend_date}.")
+
+    if build_log_entries:
+        lines.append(f"- **BUILD_LOG.yaml recent project history** ({len(build_log_entries)} entries, not niche-specific -- real events from building this pipeline itself):")
+        for e in build_log_entries:
+            lines.append(
+                f"  - [{e['date']}, commit {e['commit']}, {e['type']}] {e['summary'].strip()} "
+                f"Why it mattered: {e['why'].strip()}"
+            )
+    else:
+        lines.append("- **BUILD_LOG.yaml**: no entries recorded yet.")
 
     return "\n".join(lines)
 
@@ -163,7 +198,8 @@ def run(run_date: str, topic: str | None, trend_date: str, force: bool) -> str:
         )
         sys.exit(1)
 
-    grounding_block = build_grounding_block(score_row, run_date, trend_candidates, trend_date)
+    build_log_entries = get_recent_build_log_entries(cfg)
+    grounding_block = build_grounding_block(score_row, run_date, trend_candidates, trend_date, build_log_entries)
 
     system_prompt = (common.PROMPTS_DIR / "produce_script.md").read_text(encoding="utf-8")
     user_content = (

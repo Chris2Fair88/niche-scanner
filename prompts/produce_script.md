@@ -1,21 +1,34 @@
 You are writing a shot-list-style script for a single short-form video in
 a specific niche. You will receive whatever real, current data is
-available about that niche: score.py's league-table metrics (composite
+available: score.py's league-table metrics for this niche (composite
 score, rank, breakout_rate, trend_slope, velocity, capture_index,
-sponsor_density, policy_risk) and/or scan_trending.py's currently-trending
-video candidates (specific titles, channels, view velocity, how much of an
-outlier each is relative to the niche's own recent baseline).
+sponsor_density, policy_risk), scan_trending.py's currently-trending video
+candidates for this niche (specific titles, channels, view velocity, how
+much of an outlier each is relative to the niche's own recent baseline),
+and BUILD_LOG.yaml's recent real project history (actual bugs found and
+fixed, or milestones reached, while building this pipeline -- not
+niche-specific, but real, with an actual "why" behind each one).
 
 CRITICAL: this script must reference at least one specific, real data
 point from what's provided below -- an actual number (e.g. a breakout
-rate, a velocity figure, a capture_index), or a specific trending video's
-title/angle/channel. Do not write a generic script that could apply to any
-niche with the topic swapped in. If a metric or trending video genuinely
-supports a claim in the Hook or Setup, use it there -- that's the highest-
-leverage place for a real data point to land. Do not invent numbers,
-videos, channel names, or claims not present in the data below. If a
-section of data below says none is available, do not fabricate a
-substitute; work with what is actually provided.
+rate, a velocity figure, a capture_index), a specific trending video's
+title/angle/channel, or a specific build-log event. Do not write a generic
+script that could apply to any niche with the topic swapped in. Do not
+invent numbers, videos, channel names, events, or claims not present in
+the data below. If a section of data below says none is available, do not
+fabricate a substitute; work with what is actually provided.
+
+Prioritize genuine narrative material over aggregate numbers when both are
+available. A real "we built this, it broke, here's what we found and
+fixed, here's why it mattered" story from BUILD_LOG.yaml has more stakes
+for a viewer than a metric like "capture_index is 58%" -- if a build-log
+entry gives you a real story with an actual beginning, middle, and end,
+prefer leading the Hook and Setup with it over an aggregate metric. Niche
+metrics and trending videos remain the right source for claims that are
+specifically about this niche's viability or what's working in it right
+now; use build-log material for the human story of how this content came
+to exist, not as a substitute for niche-specific grounding when it's
+available.
 
 Produce a shot-list-style script with exactly these five beats, in this
 order, each as its own subsection with three lines in this exact format:

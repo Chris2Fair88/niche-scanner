@@ -23,6 +23,7 @@ PROMPTS_DIR = BASE_DIR / "prompts"
 NICHES_PATH = BASE_DIR / "niches.yaml"
 RPM_TABLE_PATH = BASE_DIR / "rpm_table.yaml"
 CONFIG_PATH = BASE_DIR / "config.yaml"
+BUILD_LOG_PATH = BASE_DIR / "BUILD_LOG.yaml"
 
 
 def today_str() -> str:
@@ -83,6 +84,16 @@ def load_rpm_table() -> dict:
 
 def load_config() -> dict:
     return load_yaml(CONFIG_PATH) or {}
+
+
+def load_build_log() -> list[dict]:
+    """Real, chronological (oldest first) project history: bugs found,
+    fixes made, milestones reached, each with a real commit hash. Exists
+    so anything that wants genuine narrative material -- with actual
+    stakes, not an aggregate metric -- has somewhere real to pull it from.
+    See produce_script.py, which grounds generated scripts in the most
+    recent entries alongside score.py/scan_trending.py data."""
+    return load_yaml(BUILD_LOG_PATH) or []
 
 
 def write_json(path: Path, obj: Any) -> None:
