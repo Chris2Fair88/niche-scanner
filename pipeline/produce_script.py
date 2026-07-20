@@ -127,11 +127,28 @@ def build_grounding_block(score_row: dict | None, run_date: str, trend_candidate
     return "\n".join(lines)
 
 
-def run(run_date: str, topic: str | None, trend_date: str) -> str:
+def run(run_date: str, topic: str | None, trend_date: str, force: bool) -> str:
     cfg = common.load_config()
     conn = common.connect_db(run_date)
 
     niche_slug, niche_label = resolve_niche_slug(topic, conn)
+
+    # Check for an existing script BEFORE spending an API call on one that
+    # would just be refused -- this used to overwrite silently (confirmed:
+    # re-running for the same niche+run_date clobbered the existing file
+    # with a fresh, non-identical generation and no warning at all).
+    out_path = common.SCRIPTS_DIR / f"{niche_slug}-{run_date}.md"
+    if out_path.exists() and not force:
+        conn.close()
+        log.error(
+            "Refusing to overwrite existing script: %s already exists for "
+            "niche '%s' at run_date=%s. Pass --force to regenerate and "
+            "overwrite it, or use a different --run-date if this is meant "
+            "to be a distinct version.",
+            out_path, niche_slug, run_date,
+        )
+        sys.exit(1)
+
     score_row = get_score_row(conn, niche_slug)
     conn.close()
 
@@ -168,7 +185,6 @@ def run(run_date: str, topic: str | None, trend_date: str) -> str:
 
     script_md = f"{header}\n## Script\n\n{script_body.strip()}\n"
 
-    out_path = common.SCRIPTS_DIR / f"{niche_slug}-{run_date}.md"
     common.SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(script_md)
@@ -193,8 +209,12 @@ def main() -> None:
         help="Which data/{trend_date}/trend_scan/shortlist.json to check for fresh scan_trending.py "
              "grounding -- independent of --run-date, since trending data is always as-of-now",
     )
+    parser.add_argument(
+        "--force", action="store_true",
+        help="Overwrite an existing script file for this niche+run_date (refused by default)",
+    )
     args = parser.parse_args()
-    run(args.run_date, args.topic, args.trend_date)
+    run(args.run_date, args.topic, args.trend_date, args.force)
 
 
 if __name__ == "__main__":
