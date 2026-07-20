@@ -244,7 +244,6 @@ def verify_generated_script(script_body: str, trend_candidates: list[dict] | Non
         )
 
     return failures
-    return None
 
 
 def get_recent_build_log_entries(cfg: dict) -> list[dict]:
