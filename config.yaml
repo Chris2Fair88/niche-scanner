@@ -125,3 +125,23 @@ build_log:
   # weaker "right now" story material than this week's, and dumping every
   # entry ever recorded just gives the model more to ignore.
   recent_entries_for_grounding: 5
+
+content_safety:
+  # Structural (code, not prompt-only) filters applied to scan_trending.py
+  # candidates before they're allowed into produce_script.py's grounding
+  # data. Matches are excluded entirely, not passed through with a
+  # caveat. User-editable without a code change as new cases come up --
+  # the Fanvue/adult-content-platform case below is the first one found,
+  # not the only one that will ever exist.
+  denylist_terms:
+    - fanvue
+    - onlyfans
+    - fansly
+    - "18+"
+    - nsfw
+  # A candidate can be a genuine statistical outlier under
+  # scan_trending.py's robust_z (correctly flagged relative to its own
+  # niche's baseline) while still being too small in absolute terms to be
+  # worth building a video's hook/CTA around. 754 views was the concrete
+  # case that triggered this floor.
+  min_view_count_for_citation: 5000

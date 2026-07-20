@@ -37,12 +37,25 @@ reports/ and its contents are.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 
 from pipeline import common
 from pipeline.report import call_sonnet, estimate_tokens, fetch_rows, fmt_num, fmt_pct
 
 log = common.get_logger("produce_script")
+
+# Phrases that plausibly acknowledge "this is one data point, not a
+# trend" -- used by verify_generated_script()'s single-candidate overclaim
+# check. Deliberately a heuristic substring list, not a semantic check:
+# pure string matching can't verify the script actually reasons about
+# sample size, only that it uses language consistent with doing so.
+SINGLE_CANDIDATE_QUALIFIERS = [
+    "one data point", "single data point", "one video", "single video",
+    "one clip", "single clip", "one candidate", "not a trend",
+    "not the new normal", "isolated", "outlier, not", "one example",
+    "just one", "small sample", "one instance", "a single",
+]
 
 
 def resolve_niche_slug(topic: str | None, conn) -> tuple[str, str]:
@@ -99,6 +112,138 @@ def load_trend_candidates(niche_slug: str, trend_date: str) -> list[dict] | None
     for nr in niche_results:
         if nr["slug"] == niche_slug:
             return nr["candidates"] or None
+    return None
+
+
+def filter_safe_trend_candidates(candidates: list[dict] | None, cfg: dict) -> list[dict] | None:
+    """Structural (code, not prompt-only) content-safety filter, applied
+    between load_trend_candidates() and build_grounding_block() -- matches
+    are excluded entirely, never passed through with a caveat, since a
+    prompt-level ask alone ("don't cite adult-platform content") didn't
+    reliably hold on its own.
+
+    Two independent rules, either of which excludes a candidate:
+      (a) config.yaml's content_safety.denylist_terms, case-insensitive
+          substring match against title/channel_title. Handles/@mentions
+          embedded in a title (e.g. "...@FanvueAIAcademy") are already
+          covered by this, since they're part of the same title string.
+      (b) content_safety.min_view_count_for_citation -- a candidate can be
+          a genuine statistical outlier under scan_trending.py's robust_z
+          (correctly flagged relative to its own niche's recent baseline)
+          while still being too small in absolute terms to be worth
+          building a video's hook/CTA around.
+
+    Every exclusion is logged with which rule triggered it and the
+    candidate's title -- a real record of what got filtered and why, not
+    a silent skip. Returns None/[] straight through if there was nothing
+    to filter, so callers that already handle "no trend data available"
+    (score.py-only grounding) handle a fully-filtered list identically --
+    this never errors out on its own."""
+    if not candidates:
+        return candidates
+
+    scfg = cfg.get("content_safety", {})
+    denylist = [t.lower() for t in scfg.get("denylist_terms", [])]
+    min_views = scfg.get("min_view_count_for_citation", 0)
+
+    safe = []
+    for c in candidates:
+        title = c.get("title") or ""
+        channel = c.get("channel_title") or ""
+        haystack = f"{title} {channel}".lower()
+
+        hit = next((term for term in denylist if term in haystack), None)
+        if hit:
+            log.warning(
+                "Excluding trend candidate [denylist term '%s']: \"%s\" by %s",
+                hit, title, channel,
+            )
+            continue
+
+        view_count = c.get("view_count", 0)
+        if view_count < min_views:
+            log.warning(
+                "Excluding trend candidate [below min_view_count_for_citation=%d, "
+                "had %d views]: \"%s\" by %s",
+                min_views, view_count, title, channel,
+            )
+            continue
+
+        safe.append(c)
+
+    return safe
+
+
+def _extract_cta_section(script_body: str) -> str:
+    """Isolates just the CTA beat's own text (Voiceover/Caption/Visual),
+    stopping before the trailing '**Data grounding used:**' line -- that
+    line legitimately names cited candidates, so including it here would
+    false-positive the CTA-mention check below."""
+    match = re.search(
+        r"##\s*CTA(.*?)(?:\*\*Data grounding used:\*\*|\Z)",
+        script_body, re.DOTALL | re.IGNORECASE,
+    )
+    return match.group(1) if match else ""
+
+
+def verify_generated_script(script_body: str, trend_candidates: list[dict] | None, cfg: dict) -> list[str]:
+    """Deterministic post-generation checks -- code, not a prompt
+    instruction alone, run after call_sonnet() returns but before writing
+    anything to disk. Returns a list of failure reasons; empty means every
+    check passed. trend_candidates here is the already-filtered (safe)
+    list actually used in the grounding data, not the raw scan_trending.py
+    output.
+
+    Three checks:
+      1. The CTA section never mentions a cited candidate's channel_title
+         or title -- the CTA must point toward this channel, never send
+         the viewer to a third-party channel/video.
+      2. If grounding included exactly one trend candidate, the generated
+         text acknowledges that (heuristic substring match against
+         SINGLE_CANDIDATE_QUALIFIERS) -- guards against overclaiming a
+         trend from a single data point. Deliberately still checked even
+         though it's fuzzier than check 1; a soft heuristic beats no check.
+      3. No content_safety.denylist_terms term appears anywhere in the
+         final generated text -- independent of the filter in
+         filter_safe_trend_candidates(), since that filter only covers
+         the source material fed in, and the model could in theory
+         reference something denylisted from elsewhere in its training.
+    """
+    failures = []
+    scfg = cfg.get("content_safety", {})
+    denylist = scfg.get("denylist_terms", [])
+
+    cta_text = _extract_cta_section(script_body).lower()
+    if trend_candidates:
+        for c in trend_candidates:
+            for field in ("channel_title", "title"):
+                val = c.get(field)
+                if val and val.lower() in cta_text:
+                    failures.append(
+                        f"CTA section mentions trend candidate {field}={val!r} -- "
+                        f"the CTA must point toward this channel, never a third-party "
+                        f"channel/video."
+                    )
+
+    if trend_candidates and len(trend_candidates) == 1:
+        body_lower = script_body.lower()
+        if not any(p in body_lower for p in SINGLE_CANDIDATE_QUALIFIERS):
+            failures.append(
+                "Exactly one trend candidate was in the grounding data, but the "
+                "generated script doesn't contain language acknowledging it's a "
+                "single data point (e.g. 'one video', 'not a trend', 'small "
+                "sample') -- risks overclaiming a trend from one example."
+            )
+
+    body_lower_full = script_body.lower()
+    hit = next((term for term in denylist if term.lower() in body_lower_full), None)
+    if hit:
+        failures.append(
+            f"Generated text contains denylisted term {hit!r} -- independent "
+            f"check of the final output, not just the source grounding data."
+        )
+
+    return failures
     return None
 
 
@@ -188,6 +333,7 @@ def run(run_date: str, topic: str | None, trend_date: str, force: bool) -> str:
     conn.close()
 
     trend_candidates = load_trend_candidates(niche_slug, trend_date)
+    trend_candidates = filter_safe_trend_candidates(trend_candidates, cfg)
 
     if score_row is None and not trend_candidates:
         log.error(
@@ -212,6 +358,17 @@ def run(run_date: str, topic: str | None, trend_date: str, force: bool) -> str:
 
     log.info("Calling %s to draft a script for '%s'...", cfg["anthropic"]["model"], niche_slug)
     script_body = call_sonnet(system_prompt, user_content, cfg)
+
+    # Deterministic self-verification BEFORE writing anything to disk --
+    # same "refuse rather than silently produce something wrong" pattern
+    # as the overwrite guard above. Never auto-retries/regenerates
+    # silently; a failure surfaces to whoever ran the command.
+    failures = verify_generated_script(script_body, trend_candidates, cfg)
+    if failures:
+        log.error("Generated script failed self-verification for '%s' -- refusing to write %s:", niche_slug, out_path)
+        for f in failures:
+            log.error("  - %s", f)
+        sys.exit(1)
 
     header = (
         f"# Video Script -- {niche_label} -- {run_date}\n\n"
