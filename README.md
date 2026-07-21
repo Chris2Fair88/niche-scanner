@@ -104,18 +104,47 @@ standing in for real ingestion output:
   scores exactly" definition-of-done item actually requires -- I caught and
   fixed a real bug here (a column-name mismatch) during testing.
 
+That synthetic-fixture pass was the *first* validation, done before any real
+ingestion data existed. It was later superseded by real-data validation, and
+this file was never updated to say so until now -- stated explicitly:
+
+- Commit `bf94ccd` (2026-07-17) fixed the validation gate against **real**
+  ingested data from three real run dates (2026-07-15, 2026-07-16,
+  2026-07-17), not fixtures: the gate was failing on that real data (needed
+  to discount monopoly niches and tame a velocity outlier) before that fix.
+- `niches.yaml` defines three real negative-control niches that go through
+  the full real pipeline like any other niche: `clickbait-net-worth-shorts`,
+  `luxury-lifestyle-flexing`, and `generic-motivation-compilations`.
+- The real 2026-07-15 run (`reports/niche-report-2026-07-15.md`) reports
+  `status: "ok"` from the validation gate, with all three of those real
+  negative controls ranking in the bottom half against real candidate
+  niches -- not a synthetic run.
+
 I did not spend a real Sonnet call testing Phase 3's prose output; I did
 confirm it fails cleanly (clear message, exit code 1) when `ANTHROPIC_API_KEY`
 is unset rather than throwing a raw stack trace.
 
 `produce_voiceover.py` is now live-verified against the real ElevenLabs API
-(it wasn't at the commit that introduced it): with `ELEVENLABS_API_KEY` set,
-a real run against the `faceless-automation-channels` (2026-07-15) script
-resolved a voice from the account's `GET /v2/voices` list, generated all five
-beats (Hook/Setup/Turn/Payoff/CTA) via the with-timestamps endpoint, and
-wrote a correct mp3 + alignment JSON + manifest.json per beat with no
-unhandled errors -- confirming the earlier key-missing/401 checks generalize
-to a real 200 response, not just clean failure paths.
+(it wasn't at the commit that introduced it). Stated explicitly, with the
+actual values from that run against the `faceless-automation-channels`
+(2026-07-15) script:
+
+- Resolved voice: `hpp4J3VqNfWAUOO0d1Us` -- "Bella - Professional, Bright,
+  Warm" (premade), picked up automatically from `GET /v2/voices` since
+  `elevenlabs.voice_id` is unset in `config.yaml`.
+- All five beats generated via the with-timestamps endpoint, 637 characters
+  total (Hook 64, Setup 161, Turn 200, Payoff 118, CTA 94):
+  `01-hook.mp3` (71,515 bytes), `02-setup.mp3` (185,199 bytes),
+  `03-turn.mp3` (225,324 bytes), `04-payoff.mp3` (108,713 bytes),
+  `05-cta.mp3` (94,084 bytes) -- 42.5s of audio combined.
+- Each mp3 has a matching `<beat>.alignment.json` with real
+  character-level `character_start_times_seconds` /
+  `character_end_times_seconds` arrays (confirmed non-empty and
+  monotonically increasing, e.g. Hook's last character ends at 4.412s,
+  matching its own reported duration) and a `manifest.json` tying beat
+  order to files and durations.
+- No unhandled errors -- confirming the earlier key-missing/401 checks
+  generalize to a real 200 response, not just clean failure paths.
 
 ## Notes on deviations from the original brief
 
