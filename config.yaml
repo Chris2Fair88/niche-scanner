@@ -145,3 +145,18 @@ content_safety:
   # worth building a video's hook/CTA around. 754 views was the concrete
   # case that triggered this floor.
   min_view_count_for_citation: 5000
+
+elevenlabs:
+  api_key_env: ELEVENLABS_API_KEY
+  # If unset, produce_voiceover.py resolves the first voice actually
+  # available on the account via GET /v2/voices at runtime, rather than
+  # hardcoding a specific voice_id that might not exist on this account's
+  # tier -- free-tier voice-library access varies by account. Set this
+  # explicitly once you know which voice you want.
+  voice_id: null
+  # Documented default for the /v1/text-to-speech/{voice_id}/with-timestamps
+  # endpoint (confirmed against ElevenLabs' own API reference).
+  model_id: eleven_multilingual_v2
+  # Documented default for the same endpoint; also determines the audio
+  # file extension produce_voiceover.py writes (mp3_* -> .mp3).
+  output_format: mp3_44100_128

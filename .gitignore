@@ -4,6 +4,13 @@
 data/*
 !data/.gitkeep
 
+# Generated voiceover audio (mp3) + alignment JSON from produce_voiceover.py --
+# binary media generated from an already-reviewed script, not source, and
+# not meant for version control (same treatment as data/ above). Directory
+# structure is preserved via audio/.gitkeep.
+audio/*
+!audio/.gitkeep
+
 # Python
 __pycache__/
 *.py[cod]
