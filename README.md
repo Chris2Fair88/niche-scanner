@@ -108,6 +108,15 @@ I did not spend a real Sonnet call testing Phase 3's prose output; I did
 confirm it fails cleanly (clear message, exit code 1) when `ANTHROPIC_API_KEY`
 is unset rather than throwing a raw stack trace.
 
+`produce_voiceover.py` is now live-verified against the real ElevenLabs API
+(it wasn't at the commit that introduced it): with `ELEVENLABS_API_KEY` set,
+a real run against the `faceless-automation-channels` (2026-07-15) script
+resolved a voice from the account's `GET /v2/voices` list, generated all five
+beats (Hook/Setup/Turn/Payoff/CTA) via the with-timestamps endpoint, and
+wrote a correct mp3 + alignment JSON + manifest.json per beat with no
+unhandled errors -- confirming the earlier key-missing/401 checks generalize
+to a real 200 response, not just clean failure paths.
+
 ## Notes on deviations from the original brief
 
 - **Model string updated**: the brief specified `claude-sonnet-4-6`, which
